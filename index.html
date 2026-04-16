@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rectal Cancer MRI Extraction — Syed Faizan · IIIT Hyderabad</title>
+<meta name="description" content="Official project website for structured data extraction from rectal cancer MRI reports using NLP. Research by Syed Faizan under Dr. Parameswari Krishnamurthy, PARAM LTRC, IIIT Hyderabad." />
+
+<!-- Editorial / academic typography pairing: a sharp serif display + a grotesque body -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,400&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ---------- Design Tokens ---------- */
+  :root {
+    --ink:         #121010;      /* near-black, warmer than pure black */
+    --paper:       #f5f1ea;      /* warm off-white, journal-page feel */
+    --paper-2:     #ebe5d9;      /* slightly deeper for section bands */
+    --rule:        #1c1a18;
+    --muted:       #6b6560;
+    --accent:      #b03a2e;      /* oxblood / medical manuscript red */
+    --accent-soft: #d9c9a8;      /* aged-parchment highlight */
+    --tag:         #2b2a28;
+
+    --serif:  "Fraunces", "Times New Roman", serif;
+    --sans:   "Manrope", system-ui, sans-serif;
+    --mono:   "JetBrains Mono", ui-monospace, monospace;
+
+    --maxw: 1240px;
+    --gutter: clamp(1.25rem, 3vw, 2.5rem);
+  }
+
+  /* ---------- Reset & Base ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    font-feature-settings: "ss01", "ss02", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--ink); transition: color .2s, border-color .2s; }
+  a:hover { color: var(--accent); border-color: var(--accent); }
+  img { max-width: 100%; display: block; }
+  ::selection { background: var(--accent); color: var(--paper); }
+
+  /* Subtle paper grain over the whole page */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.07  0 0 0 0 0.07  0 0 0 0 0.07  0 0 0 0.08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    opacity: .5;
+    mix-blend-mode: multiply;
+  }
+
+  /* ---------- Layout helpers ---------- */
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--gutter); position: relative; z-index: 2; }
+
+  /* ---------- Top Masthead (newspaper-style) ---------- */
+  .masthead {
+    border-bottom: 1px solid var(--rule);
+    padding: 1rem 0 .75rem;
+    position: sticky; top: 0;
+    background: var(--paper);
+    z-index: 10;
+  }
+  .masthead-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .mark {
+    font-family: var(--serif);
+    font-weight: 800;
+    font-size: 1.35rem;
+    letter-spacing: -.01em;
+    border: none;
+  }
+  .mark .dot { color: var(--accent); }
+  .nav { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+  .nav a {
+    font-family: var(--sans);
+    font-size: .82rem;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    border: none;
+    color: var(--ink);
+    padding-bottom: 2px;
+    position: relative;
+  }
+  .nav a::after {
+    content: "";
+    position: absolute; left: 0; bottom: -2px;
+    width: 0; height: 1px; background: var(--accent);
+    transition: width .25s ease;
+  }
+  .nav a:hover::after { width: 100%; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding: clamp(3rem, 8vw, 6rem) 0 clamp(3rem, 6vw, 5rem);
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  @media (min-width: 900px) {
+    .hero-grid { grid-template-columns: 1.4fr 1fr; gap: 4rem; align-items: end; }
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .75rem;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex; align-items: center; gap: .75rem;
+    margin-bottom: 1.25rem;
+  }
+  .eyebrow::before {
+    content: ""; width: 32px; height: 1px; background: var(--accent);
+  }
+  h1.title {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(2.4rem, 6.5vw, 5.2rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin: 0 0 1.5rem;
+  }
+  h1.title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .lede {
+    font-family: var(--serif);
+    font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+    line-height: 1.55;
+    color: var(--ink);
+    max-width: 52ch;
+    font-weight: 400;
+  }
+  .hero-side {
+    font-family: var(--mono);
+    font-size: .8rem;
+    line-height: 1.9;
+    color: var(--muted);
+    border-left: 1px solid var(--rule);
+    padding-left: 1.25rem;
+  }
+  .hero-side dt { color: var(--ink); font-weight: 500; text-transform: uppercase; letter-spacing: .1em; margin-top: .75rem; }
+  .hero-side dt:first-child { margin-top: 0; }
+  .hero-side dd { margin: 0 0 .25rem; }
+
+  /* ---------- Section headers ---------- */
+  section { padding: clamp(3rem, 6vw, 5rem) 0; border-bottom: 1px solid var(--rule); }
+  .sect-head {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  @media (min-width: 900px) {
+    .sect-head { grid-template-columns: 200px 1fr; gap: 3rem; align-items: baseline; }
+  }
+  .sect-num {
+    font-family: var(--mono);
+    font-size: .8rem;
+    letter-spacing: .2em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .sect-title {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(1.8rem, 3.5vw, 2.75rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .sect-title em { font-style: italic; color: var(--accent); }
+
+  /* ---------- Abstract / prose blocks ---------- */
+  .prose {
+    font-family: var(--serif);
+    font-size: 1.08rem;
+    line-height: 1.7;
+    max-width: 68ch;
+    margin-left: auto;
+    margin-right: 0;
+  }
+  .prose p + p { margin-top: 1rem; }
+  .drop::first-letter {
+    font-family: var(--serif);
+    font-weight: 800;
+    font-size: 4em;
+    float: left;
+    line-height: .85;
+    padding: .35rem .6rem 0 0;
+    color: var(--accent);
+  }
+
+  /* ---------- Metric strip ---------- */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    margin-top: 2.5rem;
+  }
+  @media (min-width: 700px) { .metrics { grid-template-columns: repeat(4, 1fr); } }
+  .metric {
+    padding: 1.75rem 1rem;
+    border-right: 1px solid var(--rule);
+    text-align: left;
+  }
+  .metric:last-child { border-right: none; }
+  @media (max-width: 699px) {
+    .metric:nth-child(2) { border-right: none; }
+    .metric:nth-child(1), .metric:nth-child(2) { border-bottom: 1px solid var(--rule); }
+  }
+  .metric-value {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .metric-value .unit { font-size: .45em; color: var(--muted); margin-left: .25rem; font-weight: 400;}
+  .metric-label {
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: .5rem;
+  }
+
+  /* ---------- Documents ---------- */
+  .docs {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  @media (min-width: 780px) { .docs { grid-template-columns: 1fr 1fr; } }
+  .doc {
+    background: var(--paper);
+    padding: 2rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: background .2s;
+    border: none;
+  }
+  .doc:hover { background: var(--paper-2); }
+  .doc-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
+  }
+  .doc-kind {
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding: .25rem .55rem;
+    border: 1px solid var(--accent);
+    white-space: nowrap;
+  }
+  .doc-icon {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.25rem;
+    color: var(--muted);
+  }
+  .doc-title {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 1.4rem;
+    line-height: 1.2;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .doc-desc {
+    font-size: .92rem;
+    color: var(--muted);
+    line-height: 1.55;
+    margin: 0;
+    flex-grow: 1;
+  }
+  .doc-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: .75rem;
+    color: var(--muted);
+  }
+  .doc-link {
+    border: none;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    font-size: .78rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+  }
+  .doc-link::after { content: "→"; transition: transform .2s; }
+  .doc-link:hover { color: var(--accent); }
+  .doc-link:hover::after { transform: translateX(4px); }
+
+  /* ---------- Daily Updates ---------- */
+  #updates { background: var(--paper-2); }
+  .updates-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  @media (min-width: 900px) {
+    .updates-layout { grid-template-columns: 380px 1fr; gap: 3.5rem; align-items: start; }
+  }
+
+  /* Compose form — only stick on wide screens where it fits comfortably;
+     constrain max height + allow internal scroll to prevent overlap with
+     content above when the viewport is short. */
+  .compose {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 1.75rem;
+  }
+  @media (min-width: 900px) {
+    .compose {
+      position: sticky;
+      top: 5rem;
+      max-height: calc(100vh - 6rem);
+      overflow-y: auto;
+    }
+  }
+  .compose h3 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 1.4rem;
+    margin: 0 0 1.25rem;
+    letter-spacing: -0.01em;
+  }
+  .field { margin-bottom: 1rem; }
+  .field label {
+    display: block;
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .4rem;
+  }
+  .field input[type="text"],
+  .field textarea,
+  .field select {
+    width: 100%;
+    font-family: var(--sans);
+    font-size: .95rem;
+    padding: .65rem .75rem;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 0;
+    transition: border-color .15s;
+  }
+  .field textarea { min-height: 110px; resize: vertical; font-family: var(--serif); line-height: 1.55; }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    outline: none; border-color: var(--accent);
+  }
+  .field input[type="file"] {
+    font-family: var(--mono);
+    font-size: .75rem;
+    color: var(--muted);
+    width: 100%;
+  }
+  .file-hint { font-family: var(--mono); font-size: .68rem; color: var(--muted); margin-top: .35rem; }
+
+  .btn {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: .82rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    padding: .85rem 1.5rem;
+    background: var(--ink);
+    color: var(--paper);
+    border: 1px solid var(--ink);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    width: 100%;
+  }
+  .btn:hover { background: var(--accent); border-color: var(--accent); }
+  .btn-ghost {
+    background: transparent; color: var(--ink);
+  }
+  .btn-ghost:hover { background: var(--ink); color: var(--paper); }
+
+  /* Timeline */
+  .timeline { position: relative; }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 7px; top: 8px; bottom: 0;
+    width: 1px;
+    background: var(--rule);
+  }
+  .entry {
+    position: relative;
+    padding-left: 2.25rem;
+    padding-bottom: 2.25rem;
+  }
+  .entry::before {
+    content: "";
+    position: absolute;
+    left: 2px; top: 10px;
+    width: 11px; height: 11px;
+    background: var(--accent);
+    border: 2px solid var(--paper-2);
+    border-radius: 50%;
+  }
+  .entry-date {
+    font-family: var(--mono);
+    font-size: .75rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .35rem;
+  }
+  .entry-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: .5rem;
+  }
+  .entry-title {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 1.3rem;
+    line-height: 1.25;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .entry-tag {
+    font-family: var(--mono);
+    font-size: .65rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    padding: .2rem .5rem;
+    background: var(--ink);
+    color: var(--paper);
+    white-space: nowrap;
+  }
+  .entry-tag.t-annotation { background: var(--accent); }
+  .entry-tag.t-experiment { background: #2b5f4a; }
+  .entry-tag.t-meeting    { background: #6b4a8a; }
+  .entry-tag.t-writing    { background: #8a5a2b; }
+
+  .entry-body {
+    font-family: var(--serif);
+    font-size: 1rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: var(--ink);
+  }
+  .entry-files {
+    margin-top: .75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+  }
+  .file-chip {
+    font-family: var(--mono);
+    font-size: .72rem;
+    padding: .3rem .6rem;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    color: var(--ink);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+  }
+  .file-chip::before { content: "◨"; color: var(--accent); }
+  .file-chip:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .entry-actions {
+    margin-top: .75rem;
+    display: flex; gap: .75rem;
+  }
+  .entry-actions button {
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0;
+  }
+  .entry-actions button:hover { color: var(--accent); }
+
+  .empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    border: 1px dashed var(--rule);
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  /* Filter pill bar */
+  .filters {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .filter-pill {
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: .4rem .75rem;
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .filter-pill:hover { border-color: var(--ink); color: var(--ink); }
+  .filter-pill.active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+
+  /* ---------- About / People ---------- */
+  .people {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  @media (min-width: 780px) { .people { grid-template-columns: 1fr 1fr; gap: 3rem; } }
+  .person {
+    border-top: 2px solid var(--ink);
+    padding-top: 1rem;
+  }
+  .person-name {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin: 0 0 .2rem;
+    letter-spacing: -0.01em;
+  }
+  .person-role {
+    font-family: var(--mono);
+    font-size: .75rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: .75rem;
+  }
+  .person-bio {
+    font-family: var(--serif);
+    font-size: .98rem;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+
+  /* ---------- Footer ---------- */
+  footer {
+    padding: 3rem 0 2rem;
+    background: var(--ink);
+    color: var(--paper);
+    position: relative; z-index: 2;
+  }
+  footer .wrap { display: grid; gap: 1.5rem; grid-template-columns: 1fr; }
+  @media (min-width: 780px) {
+    footer .wrap { grid-template-columns: 2fr 1fr 1fr; gap: 3rem; }
+  }
+  footer a { color: var(--paper); border-color: rgba(245,241,234,.3); }
+  footer a:hover { color: var(--accent-soft); border-color: var(--accent-soft); }
+  footer h4 {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--accent-soft);
+    margin: 0 0 1rem;
+    font-weight: 400;
+  }
+  .foot-mark {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 300;
+    line-height: 1.1;
+    margin-bottom: .75rem;
+  }
+  .foot-mark em { font-style: italic; color: var(--accent-soft); }
+  .foot-sig {
+    font-family: var(--mono);
+    font-size: .72rem;
+    color: rgba(245,241,234,.5);
+    letter-spacing: .1em;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(245,241,234,.15);
+  }
+
+  /* ---------- Entry animation ---------- */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeUp .5s ease both; }
+
+  /* Scroll reveal on sections */
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ============ MASTHEAD ============ -->
+<header class="masthead">
+  <div class="wrap masthead-inner">
+    <a class="mark" href="#top">Rectal MRI<span class="dot">.</span>NLP</a>
+    <nav class="nav">
+      <a href="#abstract">Abstract</a>
+      <a href="#documents">Documents</a>
+      <a href="#updates">Daily Updates</a>
+      <a href="#about">About</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" style="border-bottom:1px solid var(--rule)">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow">PARAM LTRC · IIIT Hyderabad · 2025–26</div>
+        <h1 class="title">Structured extraction from rectal cancer <em>MRI reports</em>.</h1>
+        <p class="lede">
+          An ongoing study in low-resource clinical NLP: fifty-four standardised fields,
+          sixty-five training reports, and the progression of methods — from TF-IDF baselines to
+          fine-tuned Flan-T5 ensembles with domain-rule layers — that close the gap toward
+          clinical-grade accuracy.
+        </p>
+      </div>
+      <dl class="hero-side">
+        <dt>Research Scientist</dt>
+        <dd>Syed Faizan</dd>
+        <dt>Supervisor</dt>
+        <dd>Dr. Parameswari Krishnamurthy</dd>
+        <dt>Lab</dt>
+        <dd>PARAM LTRC, IIIT Hyderabad</dd>
+        <dt>Domain</dt>
+        <dd>Clinical NLP · Information Extraction</dd>
+        <dt>Status</dt>
+        <dd>Active · v2 pipeline</dd>
+      </dl>
+    </div>
+
+    <div class="wrap">
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-value">54<span class="unit">fields</span></div>
+          <div class="metric-label">Extraction schema</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">83.3<span class="unit">%</span></div>
+          <div class="metric-label">Valid. accuracy · 2-model</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">125<span class="unit">reports</span></div>
+          <div class="metric-label">Dataset size</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">12<span class="unit">rules</span></div>
+          <div class="metric-label">Domain constraint layer</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ABSTRACT ============ -->
+  <section id="abstract" class="reveal">
+    <div class="wrap">
+      <div class="sect-head">
+        <div class="sect-num">§ 01 / Abstract</div>
+        <h2 class="sect-title">A <em>progression</em> of approaches, carefully measured.</h2>
+      </div>
+      <div class="prose drop">
+        <p>
+          Automated extraction of structured clinical data from free-text radiology reports is
+          critical for cancer registries, treatment planning, and clinical research. This project
+          addresses the task of extracting <strong>54 standardised fields</strong> from rectal cancer
+          MRI reports — spanning patient demographics, tumour measurements, TNM staging,
+          anatomical involvement, and post-treatment assessment.
+        </p>
+        <p>
+          Working with an extremely small dataset (65 training, 20 validation, 40 test reports),
+          we systematically evaluate TF-IDF baselines, fine-tuned Flan-T5-Base and Flan-T5-Large
+          models, smart per-field ensembles, rule-based constraint layers, and retrieval-augmented
+          few-shot extraction with Gemini 2.0 Flash.
+        </p>
+        <p>
+          The best system — a per-field <strong>two-model ensemble</strong> of TF-IDF and Flan-T5-Large
+          augmented by twelve domain-knowledge rules — achieves 83.3% categorical accuracy on
+          validation, surpassing the three-model variant while halving neural training cost.
+          Remaining error analysis suggests the accuracy ceiling is fundamentally data-driven.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DOCUMENTS ============ -->
+  <section id="documents" class="reveal">
+    <div class="wrap">
+      <div class="sect-head">
+        <div class="sect-num">§ 02 / Documents</div>
+        <h2 class="sect-title">Research artefacts & <em>source notebooks</em>.</h2>
+      </div>
+
+      <div class="docs">
+
+        <a class="doc" href="A_Comparative_Study_Updated_with_2Model_Ensemble-by_Syed_Faizan.pdf" target="_blank" rel="noopener">
+          <div class="doc-head">
+            <span class="doc-kind">Research Paper</span>
+            <span class="doc-icon">¶</span>
+          </div>
+          <h3 class="doc-title">A Comparative Study of Fine-Tuned Transformers, Ensemble Methods, and Large Language Models</h3>
+          <p class="doc-desc">
+            Full 10-page manuscript covering dataset description, method progression,
+            experimental results across nine model configurations, per-field error analysis,
+            and future directions including synthetic augmentation and edge deployment.
+          </p>
+          <div class="doc-meta">
+            <span>PDF · 10 pp · 45 refs</span>
+            <span class="doc-link">Read</span>
+          </div>
+        </a>
+
+        <a class="doc" href="Literature_Review_of_structured_data_extraction_from_MRI_Reports.pdf" target="_blank" rel="noopener">
+          <div class="doc-head">
+            <span class="doc-kind">Literature Review</span>
+            <span class="doc-icon">§</span>
+          </div>
+          <h3 class="doc-title">NLP for Structured Data Extraction from MRI Reports — A Comprehensive Review</h3>
+          <p class="doc-desc">
+            Consensus-based review synthesising 50 included papers from an initial pool of 1,055.
+            Traces the evolution from rule-based systems through BERT/GPT transformers, with
+            applications across neuroimaging, oncology, and breast imaging.
+          </p>
+          <div class="doc-meta">
+            <span>PDF · 7 pp · 50 studies</span>
+            <span class="doc-link">Read</span>
+          </div>
+        </a>
+
+        <a class="doc" href="TF_IDF_FlanT5Large_2Model_Ensemble.ipynb" target="_blank" rel="noopener">
+          <div class="doc-head">
+            <span class="doc-kind">Notebook</span>
+            <span class="doc-icon">{ }</span>
+          </div>
+          <h3 class="doc-title">TF-IDF + Flan-T5-Large · Two-Model Ensemble Pipeline</h3>
+          <p class="doc-desc">
+            Self-contained Jupyter notebook implementing the best-performing configuration:
+            TF-IDF per-field classifiers combined with Flan-T5-Large (fp16, gradient checkpointing)
+            via per-field smart selection and the 12-rule constraint layer.
+          </p>
+          <div class="doc-meta">
+            <span>.ipynb · Colab-ready · A100 / T4</span>
+            <span class="doc-link">Open</span>
+          </div>
+        </a>
+
+        <a class="doc" href="Rectal_Cancer_scan_report_extraction_final.ipynb" target="_blank" rel="noopener">
+          <div class="doc-head">
+            <span class="doc-kind">Notebook</span>
+            <span class="doc-icon">{ }</span>
+          </div>
+          <h3 class="doc-title">Full Extraction Pipeline · Baselines through Best-of-3 Ensemble</h3>
+          <p class="doc-desc">
+            End-to-end extraction notebook covering the majority baseline, TF-IDF classifiers,
+            Flan-T5-Base and Large fine-tuning, best-of-3 ensemble, rule layer, and the
+            Gemini 2.0 Flash retrieval-augmented few-shot experiment.
+          </p>
+          <div class="doc-meta">
+            <span>.ipynb · Complete pipeline</span>
+            <span class="doc-link">Open</span>
+          </div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DAILY UPDATES ============ -->
+  <section id="updates" class="reveal">
+    <div class="wrap">
+      <div class="sect-head">
+        <div class="sect-num">§ 03 / Daily Updates</div>
+        <h2 class="sect-title">Annotation log, <em>experiments</em>, and working notes.</h2>
+      </div>
+
+      <div class="updates-layout">
+
+        <!-- Compose -->
+        <form class="compose" id="compose">
+          <h3>New Entry</h3>
+
+          <div class="field">
+            <label for="e-title">Title</label>
+            <input type="text" id="e-title" placeholder="e.g. Finished annotating batch 7" required />
+          </div>
+
+          <div class="field">
+            <label for="e-kind">Category</label>
+            <select id="e-kind">
+              <option value="annotation">Annotation</option>
+              <option value="experiment">Experiment</option>
+              <option value="meeting">Meeting</option>
+              <option value="writing">Writing</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="e-body">Notes</label>
+            <textarea id="e-body" placeholder="What happened today? Findings, blockers, next steps..." required></textarea>
+          </div>
+
+          <div class="field">
+            <label for="e-files">Attachments (optional)</label>
+            <input type="file" id="e-files" multiple />
+            <div class="file-hint">Files are stored locally in this browser · max ≈ 2 MB per file</div>
+          </div>
+
+          <button type="submit" class="btn">Post entry</button>
+        </form>
+
+        <!-- Timeline -->
+        <div>
+          <div class="filters" id="filters">
+            <button class="filter-pill active" data-filter="all">All</button>
+            <button class="filter-pill" data-filter="annotation">Annotation</button>
+            <button class="filter-pill" data-filter="experiment">Experiment</button>
+            <button class="filter-pill" data-filter="meeting">Meeting</button>
+            <button class="filter-pill" data-filter="writing">Writing</button>
+          </div>
+          <div class="timeline" id="timeline"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ABOUT ============ -->
+  <section id="about" class="reveal">
+    <div class="wrap">
+      <div class="sect-head">
+        <div class="sect-num">§ 04 / About</div>
+        <h2 class="sect-title">The <em>people</em> behind this work.</h2>
+      </div>
+
+      <div class="people">
+        <div class="person">
+          <div class="person-role">Research Scientist</div>
+          <h3 class="person-name">Syed Faizan</h3>
+          <p class="person-bio">
+            Research Scientist at PARAM LTRC, IIIT Hyderabad, focused on clinical NLP
+            and structured information extraction. Currently developing the
+            rectal cancer MRI extraction pipeline and evaluating low-resource
+            transfer learning strategies for medical text.
+          </p>
+        </div>
+        <div class="person">
+          <div class="person-role">Supervisor</div>
+          <h3 class="person-name">Dr. Parameswari Krishnamurthy</h3>
+          <p class="person-bio">
+            Faculty at the Language Technologies Research Centre (LTRC),
+            IIIT Hyderabad. Research spans computational linguistics,
+            language resources, and the application of NLP to under-resourced
+            domains including clinical and biomedical text.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="foot-mark">Rectal MRI <em>· NLP</em></div>
+      <p style="max-width:40ch; color: rgba(245,241,234,.7); font-size: .9rem;">
+        Official project site. Part of ongoing research at the Language Technologies
+        Research Centre, IIIT Hyderabad.
+      </p>
+    </div>
+    <div>
+      <h4>Affiliation</h4>
+      <p style="font-size:.88rem; line-height:1.7;">
+        PARAM LTRC<br>
+        IIIT Hyderabad<br>
+        Gachibowli, Telangana, IN
+      </p>
+    </div>
+    <div>
+      <h4>Navigate</h4>
+      <p style="font-size:.88rem; line-height:1.9;">
+        <a href="#abstract">Abstract</a><br>
+        <a href="#documents">Documents</a><br>
+        <a href="#updates">Daily Updates</a><br>
+        <a href="#about">About</a>
+      </p>
+    </div>
+    <div class="foot-sig" style="grid-column: 1 / -1;">
+      © 2026 Syed Faizan · All research materials · Built at IIIT Hyderabad
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   Daily Updates — persistent local storage + file attachments
+   ============================================================
+   Entries and small file attachments (as data URLs) live in
+   localStorage. Attachments are capped at ~2MB each because
+   localStorage has a ~5MB budget in most browsers.
+============================================================ */
+
+const STORAGE_KEY = "rectal_mri_updates_v1";
+const MAX_FILE_BYTES = 2 * 1024 * 1024; // ~2MB
+
+// Load entries from localStorage, or seed with a few starter entries
+function loadEntries() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { console.warn("Load failed", e); }
+
+  // Seed content so the timeline isn't empty on first load
+  return [
+    {
+      id: Date.now() - 3000,
+      title: "Two-model ensemble (TF-IDF + Flan-T5-Large) reaches 83.3% val",
+      kind: "experiment",
+      body: "New 2-model configuration outperformed the best-of-3 ensemble on validation by 1.8 points while halving neural training cost. Rule layer added 16 corrections on val, 36 on test. Best val loss 0.131 at epoch 5.",
+      date: new Date(Date.now() - 3 * 86400000).toISOString(),
+      files: []
+    },
+    {
+      id: Date.now() - 2000,
+      title: "Literature review finalised — 50 papers included",
+      kind: "writing",
+      body: "Completed the Consensus-based literature review. Screened 1,055 papers down to 50 through methodological relevance filtering. Added references section to the main manuscript and tightened the citation hygiene.",
+      date: new Date(Date.now() - 2 * 86400000).toISOString(),
+      files: []
+    },
+    {
+      id: Date.now() - 1000,
+      title: "Supervisor meeting — notebook presentation prep",
+      kind: "meeting",
+      body: "Reviewed the self-contained notebook with Dr. Parameswari. Added markdown explanation cells between code sections; agreed on next step to investigate LLM output-format alignment via SentenceTransformer matching.",
+      date: new Date(Date.now() - 1 * 86400000).toISOString(),
+      files: []
+    }
+  ];
+}
+
+function saveEntries(entries) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  } catch (e) {
+    alert("Could not save — storage may be full. Remove some attachments and try again.");
+    console.error(e);
+  }
+}
+
+let entries = loadEntries();
+let activeFilter = "all";
+
+// Format an ISO date as a readable newspaper-style string
+function formatDate(iso) {
+  const d = new Date(iso);
+  const opts = { year: "numeric", month: "short", day: "numeric" };
+  const dateStr = d.toLocaleDateString("en-US", opts);
+  const timeStr = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+  return `${dateStr} · ${timeStr}`;
+}
+
+// Escape HTML to prevent injection from user-entered content
+function esc(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Render all entries into the timeline
+function renderTimeline() {
+  const tl = document.getElementById("timeline");
+  const filtered = activeFilter === "all"
+    ? entries
+    : entries.filter(e => e.kind === activeFilter);
+
+  if (filtered.length === 0) {
+    tl.innerHTML = `<div class="empty">No entries yet. Post your first note using the form on the left.</div>`;
+    return;
+  }
+
+  // Newest first
+  const sorted = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  tl.innerHTML = sorted.map(e => `
+    <article class="entry fade-in" data-id="${e.id}">
+      <div class="entry-date">${formatDate(e.date)}</div>
+      <div class="entry-head">
+        <h4 class="entry-title">${esc(e.title)}</h4>
+        <span class="entry-tag t-${e.kind}">${e.kind}</span>
+      </div>
+      <div class="entry-body">${esc(e.body)}</div>
+      ${e.files && e.files.length ? `
+        <div class="entry-files">
+          ${e.files.map(f => `<a class="file-chip" href="${f.data}" download="${esc(f.name)}">${esc(f.name)}</a>`).join("")}
+        </div>
+      ` : ""}
+      <div class="entry-actions">
+        <button data-action="delete" data-id="${e.id}">Delete</button>
+      </div>
+    </article>
+  `).join("");
+}
+
+// Convert a File to a data URL so it can live in localStorage
+function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Handle form submission — build an entry, persist, re-render
+document.getElementById("compose").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+
+  const title = document.getElementById("e-title").value.trim();
+  const kind  = document.getElementById("e-kind").value;
+  const body  = document.getElementById("e-body").value.trim();
+  const fileInput = document.getElementById("e-files");
+
+  if (!title || !body) return;
+
+  // Process attachments (skip any that exceed the cap)
+  const files = [];
+  for (const file of fileInput.files) {
+    if (file.size > MAX_FILE_BYTES) {
+      alert(`"${file.name}" is larger than 2MB and won't be attached. Link to it externally instead.`);
+      continue;
+    }
+    try {
+      const data = await fileToDataURL(file);
+      files.push({ name: file.name, size: file.size, type: file.type, data });
+    } catch (e) { console.error("File read failed", e); }
+  }
+
+  entries.push({
+    id: Date.now(),
+    title, kind, body,
+    date: new Date().toISOString(),
+    files
+  });
+
+  saveEntries(entries);
+  renderTimeline();
+  ev.target.reset();
+});
+
+// Delegate delete-button clicks from the timeline
+document.getElementById("timeline").addEventListener("click", (ev) => {
+  const btn = ev.target.closest('button[data-action="delete"]');
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+  if (!confirm("Delete this entry?")) return;
+  entries = entries.filter(e => e.id !== id);
+  saveEntries(entries);
+  renderTimeline();
+});
+
+// Filter pills
+document.getElementById("filters").addEventListener("click", (ev) => {
+  const pill = ev.target.closest(".filter-pill");
+  if (!pill) return;
+  document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
+  pill.classList.add("active");
+  activeFilter = pill.dataset.filter;
+  renderTimeline();
+});
+
+// Scroll-reveal for sections
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); });
+}, { threshold: 0.1 });
+document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+
+// First paint
+renderTimeline();
+</script>
+
+</body>
+</html>
